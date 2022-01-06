@@ -8,8 +8,9 @@ linear_w2:
     computed the linearized w2 distance between two inputted
     functions tabulated on a grid in R^2
 
-solve_linear_system: 
-    solve the linear system \(L^2\)
+solve_pde: 
+    solve the pde
+    $$-\Delta \psi + q \psi = u$$
 
 potential:
     construct the potential of the pde
@@ -74,13 +75,13 @@ def testgauss():
     f = X
 
     t0 = time.time()
-    Q = potential(f)
+    q, ff = potential(f)
     t1 = time.time()
     print("potential time (seconds)=",t1 -t0)
     print("")
 
     t0 = time.time()
-    v= linear_w2(X,Y,Q,tol=1e-4)
+    v= linear_w2(X,Y,q,ff,tol=1e-4)
     t1 = time.time()
     print("linear_w2 time (seconds)=",t1 -t0)
     print("sol = ",sol)
@@ -167,11 +168,11 @@ def gaussian_2d_example(n, mu1, mu2, std1, std2):
 #
 #
 #
-def linear_w2(X,Y,Q,tol=1e-10,maxiter=100,verbose=False):
+def linear_w2(X, Y, q, ff, tol=1e-10, maxiter=100, verbose=False):
     '''
     computed the linearized W2 distance between the two-dimensional 
     array X and the two-dimensional array Y with witten potential
-    Q
+    q
 
     Parameters
     ----------
@@ -179,7 +180,7 @@ def linear_w2(X,Y,Q,tol=1e-10,maxiter=100,verbose=False):
         n x n array of function tabulations on a grid
     Y: array_like
         n x n array of function tabulations on a grid
-    Q: array_like
+    q: array_like
         n x n array of function tabulations of witten potential 
     tol: float
         accuracy of conjugate gradient solve
@@ -211,11 +212,7 @@ def linear_w2(X,Y,Q,tol=1e-10,maxiter=100,verbose=False):
     half = np.float64(1)/2
     sqrt2 = np.sqrt(np.float64(2))
 
-    # Unpack potential
-    q = Q["potential"] 
-    ff = Q["fsqrt"]
     dV = np.float64(1)/n**2
-
     X = weight_endpoints(X,half,sz)
     Y = weight_endpoints(Y,half,sz)
 
@@ -236,7 +233,7 @@ def linear_w2(X,Y,Q,tol=1e-10,maxiter=100,verbose=False):
     u = np.reshape(u,-1)
 
     # Solve A psi = u
-    psi = solve_linear_system(u,q,sz,verbose,tol,maxiter)
+    psi = solve_pde(u,q,sz,verbose,tol,maxiter)
 
     # Compute utilde = L*psi (since L is p.s.d. this ensures v is non-negative
     # even when cg fails to convergence in maxiter)
@@ -259,8 +256,8 @@ def potential(f, eps1=1e-6, tau=1e-4, verbose=False):
     Parameters
     ----------
     f: array_like
-        n x n array of function tabulations on a grid representing 
-        at which we use to compute weighted sobolev norm
+        n x n array of function tabulations on a grid
+        which is used to compute weighted sobolev norm
     eps1: float
         constant to add to f
     tau: float
@@ -270,8 +267,10 @@ def potential(f, eps1=1e-6, tau=1e-4, verbose=False):
 
     Returns
     -------
-    Q: dictionary
-        includes keys "potential", "fsqrt"
+    q: array_like
+        witten potential
+    ff: array_like
+        sqrt of f     
 
     '''
 
@@ -294,7 +293,7 @@ def potential(f, eps1=1e-6, tau=1e-4, verbose=False):
     f = f/fint
 
     # adaptive smoothing
-    T = int(1/tau) + 1
+    T = int(1 / tau) + 1
     for itr in range(T):
 
         # add constant to f
@@ -302,24 +301,24 @@ def potential(f, eps1=1e-6, tau=1e-4, verbose=False):
         ff = np.sqrt(f1) 
 
         # smooth by running heat equation
-        ff = weight_endpoints(ff,1/sqrt2,sz)
-        d = heat_kernel_multipliers(tau,sz)
-        ff = apply_mult(ff,d,sz)
-        ff = np.reshape(ff,sz)
+        ff = weight_endpoints(ff, 1/sqrt2, sz)
+        d = heat_kernel_multipliers(tau, sz)
+        ff = apply_mult(ff, d, sz)
+        ff = np.reshape(ff, sz)
 
         # make probability distriution
         f = ff**2
-        fint = np.sum(f*dV,axis=(0,1))
-        ff = ff/np.sqrt(fint)
+        fint = np.sum(f * dV,axis=(0,1))
+        ff = ff / np.sqrt(fint)
 
         # null space of laplacian
-        v0 = np.ones(sz,dtype=np.float64)
-        v0 = weight_endpoints(v0,1/sqrt2,sz)
-        v0 = np.reshape(v0,-1)
+        v0 = np.ones(sz, dtype=np.float64)
+        v0 = weight_endpoints(v0, 1/sqrt2, sz)
+        v0 = np.reshape(v0, -1)
         v0 = v0/np.sqrt(n**2)
 
         # compute potential
-        ff = np.reshape(ff,-1)
+        ff = np.reshape(ff, -1)
         d = lap_multipliers(sz)
         q = apply_mult(ff,d,sz)/ff
 
@@ -341,18 +340,16 @@ def potential(f, eps1=1e-6, tau=1e-4, verbose=False):
             break
 
     if verbose:
-        print("adaptive smoothing required",itr,"iterations")
+        print("adaptive smoothing required", itr, "iterations")
 
-    # package output
-    Q = {"potential": q, "fsqrt": ff}
-    
-    return Q
+    return q, ff
 
 
-def solve_linear_system(u,q,sz,verbose,tol,maxiter):
+def solve_pde(u,q,sz,verbose,tol,maxiter):
     '''
-    solve 
-       -laplacian + q*psi I = u 
+    solve the pde 
+    $$-\Delta \psi + q \psi = u$$
+    
 
     Parameters
     ----------
@@ -412,20 +409,18 @@ def solve_linear_system(u,q,sz,verbose,tol,maxiter):
 
 def Afun(x,q,d,v0,sz):
     '''
-    matrix apply used for conjugate gradient
+    this function applies the matrix apply used for conjugate gradient
     
     v0 is null space vector
     
     '''
-    x = x - np.dot(v0,x)*v0 + apply_mult(q*apply_mult(x,d,sz),d,sz)
+    x = x - np.dot(v0, x) * v0 + apply_mult(q * apply_mult(x, d, sz), d, sz)
     return x
 
 
 def Lfun(x,q,sz):
     '''
-    apply the operator 
-       - laplacian + q * I
-    to x 
+    apply the operator $$-\Delta + q I$$ to x 
     '''
 
     sqrt2 = np.sqrt(np.float64(2))
@@ -441,27 +436,34 @@ def Lfun(x,q,sz):
 
 def apply_mult(x,d,sz):
     '''
-    take in tabulation in spatial domain
-    pointwise multiplication in fourier domain by d (fourier multiplier)
-
-    multiply a vector that contains the values of a function
-    tabulated on a grid 
+    Take x, an n x n array of function tabulations on a grid,
+    perform a discrete cos transform, and perform pointwise 
+    multiplication in coefficients of cos expansion with n x n
+    array d. 
     '''
+
+    # cos transform of x
     x = np.reshape(x,sz)
     x = dct(x,axis=0,type=1,norm="ortho")
     x = dct(x,axis=1,type=1,norm="ortho")
+    
+    # pointwise multiplication in dct space
     x = x*d
+
+    # revert back to spatial domain
     x = idct(x,axis=0,type=1,norm="ortho")
     x = idct(x,axis=1,type=1,norm="ortho")
     x = np.reshape(x,-1)
+
     return x
 
 
 def lap_multipliers(sz):
     '''
-    construct array of factors used for applying the 
+    construct n x n array of multiplicative factors used for applying the 
     laplacian operator to an expansion in complex exponentials
     '''
+
     n = sz[0] - 1
     fq = np.array(range(n+1),dtype=np.float64)
     fqx, fqy = np.meshgrid(fq, fq, indexing='ij')
@@ -471,8 +473,8 @@ def lap_multipliers(sz):
 
 def lapinv_multipliers(sz):
     '''
-    construct array of factors used for applying the inverse
-    laplacian operator to an expansion in complex exponentials
+    construct n x n array of multiplicative factors used for applying the 
+    inverse laplacian operator to an expansion in complex exponentials
     '''
     n = sz[0] - 1
     fq = np.array(range(n+1),dtype=np.float64)
@@ -487,9 +489,10 @@ def lapinv_multipliers(sz):
 
 def lapinv_half_multipliers(sz):
     '''
-    construct array of factors used for applying the square root inverse
-    laplacian operator to an expansion in complex exponentials
+    construct n x n array of multiplicative factors used for applying
+    \(\Delta^{-1/2}\) to an expansion in complex exponentials
     '''
+
     n = sz[0] - 1
     fq = np.array(range(n+1),dtype=np.float64)
     fqx, fqy = np.meshgrid(fq, fq, indexing='ij')
@@ -502,6 +505,10 @@ def lapinv_half_multipliers(sz):
 
 
 def heat_kernel_multipliers(tau,sz):
+    '''
+    construct n x n array of multiplicative factors used for applying
+    heat kernel for time tau to an expansion in complex exponentials
+    '''
     n = sz[0] - 1
     fq = np.array(range(n+1),dtype=np.float64)
     fq1, fq2 = np.meshgrid(fq, fq, indexing='ij')
@@ -511,8 +518,9 @@ def heat_kernel_multipliers(tau,sz):
 
 def weight_endpoints(x,w,sz):
     '''
-    w is a scalar and multiply each element of boundary of x 
-    by w. for the corner points, multiply by w^2
+    scale the boundary elements of the n x n array x. 
+    scale each element of boundary of x 
+    by w, expect for the corner points which are multiply by w^2
     
     '''
     szx = x.shape
@@ -529,11 +537,7 @@ def weight_endpoints(x,w,sz):
 
 def approx_smallest(q,v0,sz,verbose):
     '''
-    check smallest eigenvalue of matrix of Afun  
-    lap^{-1/2} L lap^{-1/2}
-
-    check for smallest eigenvalue up to factor of 10
-
+    check smallest eigenvalue of matrix of Afun (up to a factor of 10) 
     '''
 
     # define shape 
