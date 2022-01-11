@@ -18,7 +18,7 @@ potential:
 ---------------------------------------------------------------------
 
 The functions contained in this module are used for computing the 
-linearized Wasserstein-2 (earthmover's) distance. These functions 
+linearized Wasserstein-2 distance. These functions 
 were written for the purposes of approximating W2 distance for 
 distributions defined on a rectangular region of R^2. A primary 
 motivation for these codes was the efficient evaluation of 
