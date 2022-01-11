@@ -29,12 +29,8 @@ See [arXiv paper] for details.
 """
 
 import numpy as np
-from nfmacros import *
 import time
 import matplotlib.pyplot as plt 
-from scipy.io import loadmat 
-from scipy.io import savemat 
-import scipy.special as sp
 from scipy.sparse.linalg import eigsh
 from scipy.fftpack import dct, idct
 from scipy.sparse.linalg import cg
