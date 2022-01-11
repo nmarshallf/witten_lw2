@@ -229,7 +229,7 @@ def linear_w2(X, Y, q, ff, tol=1e-10, maxiter=100, verbose=False):
     # Prepare u for linear system A psi = u
     u = (X - Y)/ff
     u = np.reshape(u,-1)
-    u = weight_endpoints(u,sqrt2,sz)
+    #u = weight_endpoints(u,sqrt2,sz)
     u = np.reshape(u,-1)
 
     # Solve A psi = u
