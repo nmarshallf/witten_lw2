@@ -5,12 +5,13 @@ This module contains the following user-callable functions:
 
 linear_w2:
     the primary function of this module, this function 
-    computed the linearized w2 distance between two inputted
-    functions tabulated on a grid in R^2
+    computes the linearized W2 distance between two inputted
+    functions tabulated on a rectangular grid in \(\mathbb{R}^2\)
 
 solve_pde: 
-    solve the pde
-    $$-\Delta \psi + q \psi = u$$
+    numerically solve the pde
+    $$-\Delta \psi + q \psi = u$$.
+    The solution, \(\psi\) is used to approximate linearized W2
 
 potential:
     construct the potential of the pde
@@ -166,7 +167,7 @@ def gaussian_2d_example(n, mu1, mu2, std1, std2):
 #
 def linear_w2(X, Y, q, ff, tol=1e-10, maxiter=100, verbose=False):
     '''
-    computed the linearized W2 distance between the two-dimensional 
+    compute the linearized W2 distance between the two-dimensional 
     array X and the two-dimensional array Y with witten potential
     q
 

@@ -27,11 +27,12 @@
 <p>This module contains the following user-callable functions:</p>
 <p>linear_w2:
 the primary function of this module, this function
-computed the linearized w2 distance between two inputted
-functions tabulated on a grid in R^2</p>
+computes the linearized W2 distance between two inputted
+functions tabulated on a rectangular grid in <span><span class="MathJax_Preview">\mathbb{R}^2</span><script type="math/tex">\mathbb{R}^2</script></span></p>
 <p>solve_pde:
-solve the pde
-<span><span class="MathJax_Preview">-\Delta \psi + q \psi = u</span><script type="math/tex; mode=display">-\Delta \psi + q \psi = u</script></span></p>
+numerically solve the pde
+<span><span class="MathJax_Preview">-\Delta \psi + q \psi = u</span><script type="math/tex; mode=display">-\Delta \psi + q \psi = u</script></span>.
+The solution, <span><span class="MathJax_Preview">\psi</span><script type="math/tex">\psi</script></span> is used to approximate linearized W2</p>
 <p>potential:
 construct the potential of the pde</p>
 <hr>
@@ -53,12 +54,13 @@ This module contains the following user-callable functions:
 
 linear_w2:
     the primary function of this module, this function 
-    computed the linearized w2 distance between two inputted
-    functions tabulated on a grid in R^2
+    computes the linearized W2 distance between two inputted
+    functions tabulated on a rectangular grid in \(\mathbb{R}^2\)
 
 solve_pde: 
-    solve the pde
-    $$-\Delta \psi + q \psi = u$$
+    numerically solve the pde
+    $$-\Delta \psi + q \psi = u$$.
+    The solution, \(\psi\) is used to approximate linearized W2
 
 potential:
     construct the potential of the pde
@@ -77,12 +79,8 @@ See [arXiv paper] for details.
 &#34;&#34;&#34;
 
 import numpy as np
-from nfmacros import *
 import time
 import matplotlib.pyplot as plt 
-from scipy.io import loadmat 
-from scipy.io import savemat 
-import scipy.special as sp
 from scipy.sparse.linalg import eigsh
 from scipy.fftpack import dct, idct
 from scipy.sparse.linalg import cg
@@ -218,7 +216,7 @@ def gaussian_2d_example(n, mu1, mu2, std1, std2):
 #
 def linear_w2(X, Y, q, ff, tol=1e-10, maxiter=100, verbose=False):
     &#39;&#39;&#39;
-    computed the linearized W2 distance between the two-dimensional 
+    compute the linearized W2 distance between the two-dimensional 
     array X and the two-dimensional array Y with witten potential
     q
 
@@ -910,7 +908,7 @@ inverse laplacian operator to an expansion in complex exponentials</p></div>
 <span>def <span class="ident">linear_w2</span></span>(<span>X, Y, q, ff, tol=1e-10, maxiter=100, verbose=False)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>computed the linearized W2 distance between the two-dimensional
+<div class="desc"><p>compute the linearized W2 distance between the two-dimensional
 array X and the two-dimensional array Y with witten potential
 q</p>
 <h2 id="parameters">Parameters</h2>
@@ -939,7 +937,7 @@ q</p>
 </summary>
 <pre><code class="python">def linear_w2(X, Y, q, ff, tol=1e-10, maxiter=100, verbose=False):
     &#39;&#39;&#39;
-    computed the linearized W2 distance between the two-dimensional 
+    compute the linearized W2 distance between the two-dimensional 
     array X and the two-dimensional array Y with witten potential
     q
 
