@@ -1,6 +1,6 @@
 # witten_lw2
 
-This module provides functions for computed a linearized 
+This module provides functions for computing a linearized 
 version of the 2-Wasserstein (W2) distance (see e.g. 
 https://en.wikipedia.org/wiki/Wasserstein_metric) between
 two nonnegative distributions of equal mass defined on the unit square ![equation](https://latex.codecogs.com/gif.latex?[0,1]^2%20\subset%20\mathbb{R}^2)
