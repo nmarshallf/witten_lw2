@@ -8,8 +8,7 @@ two distributions defined on the unit square $[0,1]^2 \subset \mathbb{R}^2$.
 The primary numerical task in approximating the linearized W2 
 distance is the numerical solution to a pde of the form
 
-$$ 
-(-\Delta + V) \psi = u $$
+- <img src="https://latex.codecogs.com/gif.latex? (-\Delta + V) \psi = u " /> 
 
 where $\psi, u, V : [0,1]^2 \to \mathbb{R}$. 
 
