@@ -60,13 +60,13 @@ def testgauss():
 
     # first gaussian
     mu1 = np.array([pi/2, pi/2])
-    std1 = np.array([pi/16, pi/16])
+    std1 = np.array([pi/16, pi/14])
 
     # stds
-    mu2 = np.array([pi/2 + 0.002, pi/2 + 0.003])
-    std2 = np.array([pi/16 + 0.001, pi/16 + 0.002])
+    mu2 = mu1 + np.array([0.001, 0.002])
+    std2 = std1 + np.array([0.001, 0.003])
 
-    X, Y, gcheck, dx1, dy1 = gaussian_2d_example(n, mu1, mu2, std1, std2)
+    X, Y, dx1, dy1 = gaussian_2d_example(n, mu1, mu2, std1, std2)
     sol = gaussian_formula(mu1, mu2, std1, std2)
                                                    
     f = X
@@ -90,9 +90,8 @@ def testgauss():
 
 def gaussian_formula(mu1, mu2, std1, std2):
     '''
-    This function exists for testing purposes. it computes
-    the distance between two gaussians tabulated at equispaced
-    nodes. 
+    This function exists for testing purposes. it uses a formula
+    to compute the W2 distance between two gaussians. 
     '''
 
     # unpack means
@@ -115,8 +114,8 @@ def gaussian_formula(mu1, mu2, std1, std2):
 def gaussian_2d_example(n, mu1, mu2, std1, std2):
     '''
     This function exists for testing purposes. it computes
-    the distance between two gaussians tabulated at equispaced
-    nodes. 
+    the linearized W2 distance between two gaussians tabulated 
+    on a square grid in \(R^2\). 
     '''
 
     x = np.pi*np.float64(range(n+1))/n
@@ -142,13 +141,12 @@ def gaussian_2d_example(n, mu1, mu2, std1, std2):
     fypp = lambda y: -1/sy**2*fy(y) + (y-my)**2/sy**4*fy(y)
 
     # evaulate functions at equispaced grid
-    fs = fx(xs)*fy(ys)
-    hs = hx(xs)*hy(ys)
-    fgs = np.sqrt((fy(ys)*fxp(xs))**2 + (fx(xs)*fyp(ys))**2)
-    fds = fy(ys)*fxpp(xs) + fy(xs)*fypp(ys)
-    gcheck = -(1/4)*fs**(-2)*fgs**2 + (1/2)*fs**(-1)*fds
+    fs = fx(xs) * fy(ys)
+    hs = hx(xs) * hy(ys)
+    fgs = np.sqrt((fy(ys) * fxp(xs))**2 + (fx(xs) * fyp(ys))**2)
+    fds = fy(ys) * fxpp(xs) + fy(xs) * fypp(ys)
   
-    return fs,hs,gcheck, dx1, dy1
+    return fs, hs, dx1, dy1
 
 
 
