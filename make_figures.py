@@ -1,4 +1,6 @@
 import numpy as np
+#import mrcfile
+import scipy.ndimage as ndimage
 import time
 import matplotlib.pyplot as plt 
 from scipy.io import loadmat 
@@ -13,6 +15,7 @@ def main():
     fontsize2 = 14
     make_figures_1_and_2(fontsize1,fontsize2)
     make_figures_3_and_4(fontsize1,fontsize2)
+    make_figure_5(fontsize1)
     plt.show()
 
 
@@ -408,6 +411,120 @@ def gaussian_2d_example(n,dmx=0.01,dmy=0.02,dsx=0.03,dsy=0.04):
     sol = sol/(np.pi)
 
     return hs
+
+
+def make_figure_5(fontsize1):
+
+    # Parameters
+    n = 2**7
+    m = 2**7
+    ts = np.array(range(n+1),dtype=np.float64)/n
+    xs, ys = np.meshgrid(ts, ts, indexing='xy')
+    dr = 0.05
+    theta = 2*np.pi*np.array(range(m),dtype=np.float64)/m
+    dxs = dr*np.cos(theta)
+    dys = dr*np.sin(theta)
+
+    dx = 0
+    dy = 0
+    X = jellyshift(dx,dy)
+    dV = np.float64(1)/n**2
+    Xint = np.sum(X*dV,axis=(0,1))
+    X = X/Xint
+
+    zz = zetabump(1.2*ts-.1,0.2,0.8)
+    #plt.figure()
+    #plt.plot(ts,zz,'k-')
+
+    # Visualize data
+    plt.figure() 
+    color_map = plt.cm.get_cmap('gray').reversed()
+    plt.imshow(X,cmap=color_map,extent=[0,1,0,1])
+    plt.colorbar()
+    plt.xticks(fontsize=fontsize1)
+    plt.yticks(fontsize=fontsize1)
+    plt.savefig('fig05a.eps', format='eps',bbox_inches='tight')
+
+
+    f = X;
+    sz = X.shape
+
+    YS = np.zeros((n+1,n+1,m),dtype=np.float64)
+    for i in range(m):
+        dx = dxs[i]
+        dy = dys[i]
+        YS[:,:,i] = jellyshift(dx,dy)
+        #plt.figure()
+        #plt.imshow(YS[:,:,i])
+
+
+    v = np.zeros(m,dtype=np.float64)
+    tau = 5e-3
+    q, ff = potential(f,eps1=1e-2,tau = tau)
+    szq = q.shape
+    q = np.reshape(q,sz)
+    plt.figure()
+    plt.imshow(q,cmap=color_map,extent=[0,1,0,1])
+    plt.colorbar()
+    plt.xticks(fontsize=fontsize1)
+    plt.yticks(fontsize=fontsize1)
+    plt.savefig('fig05b.eps', format='eps',bbox_inches='tight')
+    q = np.reshape(q,szq)
+
+    f = X;
+    sz = X.shape
+
+    YS = np.zeros((n+1,n+1,m),dtype=np.float64)
+    for i in range(m):
+        dx = dxs[i]
+        dy = dys[i]
+        YS[:,:,i] = jellyshift(dx,dy)
+
+
+    v = np.zeros(m,dtype=np.float64)
+    tau = 5e-3
+    q, ff = potential(f,eps1=1e-2,tau = tau)
+    t0 = time.time()
+    for i in range(m):
+        Y = YS[:,:,i]
+        v[i] = linear_w2(X,Y,q,ff,verbose=True)
+    t1 = time.time()
+    print("Average time=",(t1-t0)/m)
+    print("number=",m)
+
+
+    return
+
+
+def jellyshift(dx,dy):
+
+    ns = 108
+    nd = 2**7 + 1
+    nc = nd//2
+    dn = (nd-ns)//2
+    
+    #with mrcfile.open('FakeKvMapAlphaOne.mrc') as mrc_a1:
+    #    a1 = np.maximum(mrc_a1.data,0)
+    #with mrcfile.open('FakeKvMapAlphaTwo.mrc') as mrc_a2:
+    #    a2 = np.maximum(mrc_a2.data,0)
+    #with mrcfile.open('FakeKvMapBeta.mrc') as mrc_b:
+    #    b = np.maximum(mrc_b.data,0)
+    #vol = a1 + a2 + b;
+
+    #mdic = {"vol": vol}
+    #savemat("data.mat", mdic)
+    data = loadmat("data.mat")
+    vol = data["vol"]
+    
+    
+    dx = dx*(nd-1)  
+    dy = dy*(nd-1)  
+    image = np.zeros((nd,nd),dtype=np.float64)
+    image[dn:ns+dn,dn:ns+dn] = np.sum(vol,axis=1)
+    image = ndimage.shift(image,np.array([dx,dy]))
+    image = np.maximum(image,0)
+
+    return image
 
 
 
