@@ -35,6 +35,7 @@ from scipy.sparse.linalg import eigsh
 from scipy.fftpack import dct, idct
 from scipy.sparse.linalg import cg
 from scipy.sparse.linalg import LinearOperator
+from scipy.linalg import solve
 
 
 def main():
@@ -524,6 +525,253 @@ def approx_smallest(V, v0, sz, verbose):
         print(f"sapprox : {sapprox}")
 
     return sapprox
+
+################################################################################
+#                           EMBEDDING CODE
+################################################################################
+
+
+def prepsqrt(X,V,m,a=None,b=None,verbose=False,tol=1e-6):
+
+    # Try to compute eigenvalues of L
+    sz = X.shape
+    n = sz[0] - 1
+    dims = ((n + 1) ** 2, (n + 1) ** 2)
+
+    d = lap_multipliers(sz)
+    LXfun = lambda x: -apply_mult(x, d, sz) + V * x
+    LX = LinearOperator(dims, matvec=lambda x:  LXfun(x))
+    
+    if a is None:
+        a = eigsh(LX, k=2, which="SA", return_eigenvectors=False, tol=1e-6)[0]
+    if b is None:
+        b = eigsh(LX, k=1, which="LA", return_eigenvectors=False, tol=1e-6)
+
+    f = lambda x: np.sqrt(x)
+    alpha, err = chebcoef(f,a,b,m)
+    
+    if verbose:
+        print("approx err=",err)
+
+    W = {}
+    W["alpha"] = alpha
+    W["f"] = f
+    W["a"] = a
+    W["b"] = b
+    
+    return W
+
+
+def embed(X, Y, V, ff, W, tol=1e-10, maxiter=100, verbose=False):
+
+    # for unit square [0,1]^2
+
+    # make input numpy array
+    X = np.array(X, dtype=np.float64)
+    Y = np.array(Y, dtype=np.float64)
+
+    # X and Y are non-negatively valued
+    assert np.min(X) >= 0
+    assert np.min(Y) >= 0
+
+    # definitions
+    sz = X.shape
+    n = sz[0] - 1
+    half = np.float64(1) / 2
+
+    dV = np.float64(1) / n**2
+    X = weight_endpoints(X, half, sz)
+    Y = weight_endpoints(Y, half, sz)
+
+    # scale inputs so they are probability distribution
+    Xint = np.sum(X * dV, axis=(0, 1))
+    Yint = np.sum(Y * dV, axis=(0, 1))
+    X = X / Xint
+    Y = Y / Yint
+
+    # make into vectors
+    X = np.reshape(X, -1)
+    Y = np.reshape(Y, -1)
+
+    # Prepare u for linear system A psi = u
+    u = (X - Y) / ff
+    u = np.reshape(u, -1)
+    u = np.reshape(u, -1)
+
+    # Solve A psi = u
+    psi = solve_pde(u, V, sz, verbose, tol, maxiter)
+
+    # Prepare for sqrt
+    a = W["a"]
+    b = W["b"]
+    f = W["f"]
+    alpha = W["alpha"]
+    d = lap_multipliers(sz)
+    Lsym = lambda x: -apply_mult(x, d, sz) + V * x
+
+    # Apply L^{1/2}
+    phi = chebapply(Lsym,a,b,psi,alpha)
+    #sqrt2 = np.sqrt(np.float64(2))
+    #phi = weight_endpoints(phi, 1/sqrt2, sz)
+    phi = phi*np.sqrt(dV / (np.pi**2))
+    phi = np.reshape(phi,sz)
+
+    return phi
+
+def chebmat(x,m):
+    
+    x = np.reshape(x,-1) 
+    n = x.shape[0]
+    T = np.zeros((n,m),dtype=np.float64)
+
+    T[:,0] = 1
+    T[:,1] = x
+    for i in range(2,m):
+        T[:,i] = 2*x*T[:,i-1] - T[:,i-2]
+
+    return T
+
+
+def chebapply(Afun,a,b,x,alpha):
+    
+    Bfun = lambda x: 2*(Afun(x) - a*x)/(b - a) - x
+    m = alpha.shape[0] 
+    x = np.reshape(x,-1) 
+    y = np.zeros(x.shape,dtype=np.float64)
+
+    p0 = x
+    y += alpha[0]*p0
+    p1 = Bfun(x)
+    y += alpha[1]*p1
+    for i in range(2,m):
+        p2 = 2*Bfun(p1) - p0
+        y += alpha[i]*p2
+        p0 = p1
+        p1 = p2
+
+    return y
+
+
+def chebcoef(f,a,b,m):
+
+    # Parameters
+    n = int(1e5) # number of test points
+    
+    # Def
+    a = np.float64(a)
+    b = np.float64(b)
+    
+    
+    # Transform function
+    l = lambda x: 2*(x - a)/(b - a) - 1
+    linv = lambda x: (b - a)/2*(x+1) + a
+    
+    # Define g
+    g = lambda x: f(linv(x))
+    
+    #### TEST CODE
+    ###x = np.linspace(a,b,m)
+    ###y = T(x)
+    ###xhat = Tinv(y)
+    ###prin2("x",x)
+    ###prin2("y",y)
+    ###prin2("xhat",xhat)
+    
+    # Chebshyev nodes
+    t0 = np.pi/(2*m)
+    dt = np.pi/m
+    ts = np.zeros(m,dtype=np.float64)
+    xs = np.zeros(m,dtype=np.float64)
+    for i in range(m):
+        ts[i] = np.pi - t0 - i*dt
+    xs = np.cos(ts)
+    
+    ### # TEST CODE
+    ### ys = np.sin(ts)
+    ### plt.figure()
+    ### plt.plot(xs,ys,'.')
+    ### plt.plot(xs,np.zeros(xs.shape,dtype=np.float64),'.')
+    ### plt.show()
+    
+    # Sample g at Chebyshev nodes
+    gs = g(xs)
+    
+    
+    # Computes coefficients directly by solving linear system
+    T = chebmat(xs,m)
+
+    #### TEST CODE
+    ###prin2("T",T)
+    ###plt.figure()
+    ###plt.plot(xs,T[:,7])
+    ###plt.show()
+
+    alpha = solve(T,gs)
+   
+    #### TEST CODE 
+    ###err = np.linalg.norm(np.matmul(T,alpha) - gs)/np.linalg.norm(gs)
+    ###prin2("err",err)
+
+    yc = np.linspace(a,b,n)
+    fc = f(yc)
+    xc = l(yc)
+    fcc = g(xc)
+    err = np.linalg.norm(fc -fcc)/np.linalg.norm(fc)
+    ###prin2("err fc",err)
+    Tc = chebmat(xc,m)
+    fhat = np.matmul(Tc,alpha)
+
+    err = np.linalg.norm(fc - fhat)/np.linalg.norm(fc)
+   
+    return alpha, err
+
+
+def testcheb():
+
+    # Parameters
+    f = lambda x: np.sqrt(x)
+    m = 20
+    
+    n1 = 100
+    n2 = 120
+
+    A = np.random.randn(n1,n2)
+    A = np.matmul(A,A.T)
+    Afun = lambda x: np.matmul(A,x)
+    Afuninv = lambda x: solve(A,x)
+    x = np.random.randn(n1,1)
+    s = eigh(A,eigvals_only=True)
+    s = np.reshape(s,(1,-1))
+    a = np.min(s)
+    b = np.max(s)
+
+    alpha, approx_err = chebcoef(f,a,b,m)
+    prin2("alpha",alpha)
+    prin2("approx_err",approx_err)
+
+    y = chebapply(Afun,a,b,x,alpha)
+    prin2("y",y)
+    zhat = chebapply(Afun,a,b,y,alpha)
+    prin2("zhat",zhat)
+
+    z = Afun(x)
+    #z = Afuninv(x)
+    prin2("z",z)
+    
+    d = z - zhat
+    prin2("d",d)
+
+    err = np.linalg.norm(d)/np.linalg.norm(z)
+
+    prin2("s",s)
+    prin2("a",a)
+    prin2("b",b)
+    prin2("approx_err",approx_err)   
+    prin2("err z",err)
+
+
+
+
 
 
 if __name__ == "__main__":

@@ -1,10 +1,11 @@
 import numpy as np
-#import mrcfile
 import scipy.ndimage as ndimage
 import time
 import matplotlib.pyplot as plt 
 from scipy.io import loadmat 
 from scipy.io import savemat 
+import sys
+sys.path.append("..") 
 from witten_lw2 import linear_w2, potential
 
 
@@ -20,7 +21,6 @@ def main():
 
 
 def make_figures_1_and_2(fontsize1,fontsize2):
-
     
 
     # Parameters
@@ -279,8 +279,6 @@ def make_figures_3_and_4(fontsize1,fontsize2):
     plt.xticks(fontsize=fontsize2)
     plt.yticks(fontsize=fontsize2)
     plt.savefig('fig04a.eps', format='eps',bbox_inches='tight')
-
-
 
 
 
