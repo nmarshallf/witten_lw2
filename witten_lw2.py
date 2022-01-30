@@ -404,9 +404,9 @@ def solve_pde(u,q,sz,verbose,tol,maxiter):
 
 def Afun(x,q,d,v0,sz):
     '''
-    this function applies the matrix apply used for conjugate gradient
+    this function performs the matrix apply used for conjugate gradient
     
-    v0 is null space vector
+    v0 is the null space vector
     
     '''
     x = x - np.dot(v0, x) * v0 + apply_mult(q * apply_mult(x, d, sz), d, sz)
