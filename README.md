@@ -1,20 +1,21 @@
 # witten_lw2
 
-This module provides functions for computing a linearized 
-version of the 2-Wasserstein (W2) distance (see e.g. 
+This module provides functions for computing the weighted negative homogeneous Sobolev norm, which 
+is a linearization of the quadratic Wasserstein distance $W_2$ (see for example
 https://en.wikipedia.org/wiki/Wasserstein_metric) between
-two nonnegative distributions of equal mass defined on the unit square ![equation](https://latex.codecogs.com/gif.latex?[0,1]^2%20\subset%20\mathbb{R}^2)
+two nonnegative distributions of equal mass defined on the unit square 
 
-The primary numerical task for this local approximation of W2 
-distance (which is a negative order homogeneous weighted Sobolev norm) is the numerical solution to a pde of the form
+$[0,1]^2 \subset \mathbb{R}^2$
 
-![equation](https://latex.codecogs.com/gif.latex?(-\Delta%20+%20V)%20\psi%20=%20u)
+The primary numerical task for this local approximation of the $W_2$ metric
+distance is the numerical solution to a pde of the form
+$$
+(-\Delta + V) \psi = u
+$$
+where $V$ is a potential function.
 
-where ![equation](https://latex.codecogs.com/gif.latex?V) is a potential function.
-
-A detailed description of the numerical algorithm used in this
-module as well as the corresponding analysis is provided here 
-[arXiv].
+For a detailed description of the numerical algorithm used in this
+module as well as the corresponding analysis, see [arXiv].
 
 
 
