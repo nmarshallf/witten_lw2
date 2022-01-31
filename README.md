@@ -7,9 +7,11 @@ two nonnegative distributions of equal mass defined on the unit square $[0,1]^2 
 
 The primary numerical task for this local approximation of the $W_2$ metric
 distance is the numerical solution to a pde of the form
+
 $$
 (-\Delta + V) \psi = u
 $$
+
 where $V$ is a potential function.
 
 For a detailed description of the numerical algorithm used in this
