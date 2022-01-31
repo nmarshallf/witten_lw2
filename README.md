@@ -4,7 +4,7 @@ This module provides functions for linearization of the quadratic Wasserstein di
 https://en.wikipedia.org/wiki/Wasserstein_metric) between
 two nonnegative distributions of equal mass defined on the unit square [0,1]² ⊂ ℝ².
 In particular, this module provides a code to approximate the negative weighted homogeneous 
-Sobolev norm using a formulation based on the Witten Laplacian H, which is a Schrödinger operator
+Sobolev norm via a method that involves the Witten Laplacian H, which is a Schrödinger operator
 of the form
 
 H = -Δ + V,
